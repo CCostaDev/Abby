@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
+const { giphykey } = require('./config.json');
 
 const client = new Client({
   intents: [
@@ -36,12 +37,32 @@ for (const folder of commandFolders) {
   }
 }
 
-client.on('messageCreate', (message) => {
-  if (message.content === 'abby') {
-    message.reply('Ugh... What?');
-  }
-});
+(async () => {
+  const fetch = (await import('node-fetch')).default;
 
+  const replies = [
+    'Ugh... What?',
+    'Let me sleep..',
+    'How can I NOT help you today?',
+    'Get out!',
+    'Seems like a YOU problem..',
+  ];
+
+  client.on('messageCreate', gotMessage);
+
+  async function gotMessage(message) {
+    if (message.content === '!help') {
+      const index = Math.floor(Math.random() * replies.length);
+      message.reply(replies[index]);
+    } else if (message.content == '!gif') {
+      let url = `https://api.giphy.com/v1/gifs/search?q=bored&key=${giphykey}`;
+      let response = await fetch(url);
+      let json = await response.json();
+      const index = Math.floor(Math.random() * json.results.length);
+      message.reply(json.results[index].url);
+    }
+  }
+})();
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   const command = interaction.client.commands.get(interaction.commandName);
