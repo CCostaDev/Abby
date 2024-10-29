@@ -174,6 +174,24 @@ const distube = new DisTube(client, {
       }
       distube.resume(message);
       message.reply("Resumed the music!");
+    } else if (message.content.startsWith("!volume")) {
+      const args = message.content.split(" ");
+
+      // Check if a volume level is specified and is a number
+      const volume = parseInt(args[1]);
+      if (isNaN(volume) || volume < 1 || volume > 100) {
+        return message.reply("Please specify a volume between 1 and 100.");
+      }
+
+      // Get the current queue
+      const queue = distube.getQueue(message);
+      if (!queue) {
+        return message.reply("There is no music playing right now.");
+      }
+
+      // Set the volume
+      distube.setVolume(message, volume);
+      message.reply(`Volume set to ${volume}%`);
     }
   }
 })();
