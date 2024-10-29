@@ -65,7 +65,30 @@ const distube = new DisTube(client, {
       const index = Math.floor(Math.random() * replies.length);
       message.reply(replies[index]);
     } else if (message.content.startsWith("!gif")) {
-      const searchTerm = message.content.substring(5).trim() || "bored";
+      //split the message content into arguments
+      const args = message.content.split(" ");
+
+      // Check for channel mention or name
+      let targetChannel = message.channel;
+
+      // Check if the second argument is a channel mention (e.g., #channel-name)
+      if (args[1] && args[1].startsWith("<#") && args[1].endsWith(">")) {
+        const channelId = args[1].slice(2, -1);
+        targetChannel = client.channels.cache.get(channelId);
+      }
+
+      // Determine the search term based on wheter channelId is provided
+      const searchTerm =
+        targetChannel !== message.channel
+          ? args.slice(2).join(" ").trim()
+          : args.slice(1).join(" ").trim() || "bored";
+
+      // Verify the target channel
+      if (!targetChannel) {
+        return message.reply("I couldn't find the specified channel.");
+      }
+
+      // Construct the Tenor API URL for GIF search
       let url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
         searchTerm
       )}&key=${TenorKey}&client_key=my_test_app&limit=10`;
@@ -77,7 +100,9 @@ const distube = new DisTube(client, {
         if (json.results && json.results.length > 0) {
           const randomIndex = Math.floor(Math.random() * json.results.length);
           const gifUrl = json.results[randomIndex].media_formats.gif.url;
-          message.reply(gifUrl);
+
+          // Send GIF directly to the target channel
+          targetChannel.send(gifUrl);
         } else {
           message.reply(`No GIFs found for "${searchTerm}".`);
         }
