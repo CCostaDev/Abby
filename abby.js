@@ -160,6 +160,19 @@ const distube = new DisTube(client, {
       }
       distube.skip(message);
       message.reply("Skipped the song!");
+    } else if (message.content === "!shuffle") {
+      const queue = distube.getQueue(message);
+      if (!queue) {
+        return message.reply("There is no queue to shuffle!");
+      }
+
+      try {
+        distube.shuffle(message);
+        message.reply("The queue has been shuffled!");
+      } catch (error) {
+        console.error("Error shuffling the queue:".error);
+        message.reply("Oops.. couldn't shuffle the queue.");
+      }
     } else if (message.content === "!pause") {
       if (!distube.getQueue(message)) {
         message.reply("There's no music playing to pause.");
