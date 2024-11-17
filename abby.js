@@ -138,28 +138,52 @@ const distube = new DisTube(client, {
         message.reply("There was an issue playing the song.");
       }
     } else if (message.content === "!stop") {
-      const queue = distube.getQueue(message);
+      const queue = distube.getQueue(message); // Get the current music queue
+
       if (queue) {
+        // Stop the music and provide feedback
         distube.stop(message);
         message.reply("Stopped the music and I'm leaving the channel!");
 
-        const voiceChannel = message.member.voice.channel;
-        if (voiceChannel) {
-          const connection = getVoiceConnection(voiceChannel.guild.id);
-          if (connection) {
-            distube.voices.leave(voiceChannel.guild); // Forces DisTube to leave the channel
-            connection.destroy();
+        // Clean up DisTube's internal voice connection
+        try {
+          const voiceChannel = message.member.voice.channel;
+          if (voiceChannel) {
+            // Forcefully leave the channel via DisTube
+            await distube.voices.leave(voiceChannel.guild);
+
+            // Additionally destroy the Discord.js voice connection if it still exists
+            const connection = getVoiceConnection(voiceChannel.guild.id);
+            if (connection) {
+              connection.destroy();
+            }
           }
+        } catch (error) {
+          console.error(
+            "Error during DisTube cleanup or voice connection destroy:",
+            error
+          );
         }
       } else {
-        message.reply("There is nothing playing right now.");
+        // If no music is playing, attempt to disconnect anyway
+        message.reply(
+          "There is nothing playing, but I'll leave the voice channel if connected."
+        );
 
-        const voiceChannel = message.member.voice.channel;
-        if (voiceChannel) {
-          const connection = getVoiceConnection(voiceChannel.guild.id);
-          if (connection) {
-            connection.destroy();
+        try {
+          const voiceChannel = message.member.voice.channel;
+          if (voiceChannel) {
+            // Forcefully leave the channel via DisTube
+            await distube.voices.leave(voiceChannel.guild);
+
+            // Additionally destroy the Discord.js voice connection if it still exists
+            const connection = getVoiceConnection(voiceChannel.guild.id);
+            if (connection) {
+              connection.destroy();
+            }
           }
+        } catch (error) {
+          console.error("Error during cleanup when no queue exists:", error);
         }
       }
     } else if (message.content === "!skip") {
