@@ -152,6 +152,14 @@ const distube = new DisTube(client, {
         }
       } else {
         message.reply("There is nothing playing right now.");
+
+        const voiceChannel = message.member.voice.channel;
+        if (voiceChannel) {
+          const connection = getVoiceConnection(voiceChannel.guild.id);
+          if (connection) {
+            connection.destroy();
+          }
+        }
       }
     } else if (message.content === "!skip") {
       if (!distube.getQueue(message)) {
