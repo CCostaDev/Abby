@@ -147,6 +147,7 @@ const distube = new DisTube(client, {
         if (voiceChannel) {
           const connection = getVoiceConnection(voiceChannel.guild.id);
           if (connection) {
+            distube.voices.leave(voiceChannel.guild); // Forces DisTube to leave the channel
             connection.destroy();
           }
         }
