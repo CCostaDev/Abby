@@ -26,7 +26,7 @@ const commandFolders = fs.readdirSync(foldersPath);
 const commandsInfo = [
   {
     name: "help",
-    description: "Asks for Abby help, if she is willing to give.",
+    description: "Asks Abby for help, if she is willing to give it to you.",
   },
   { name: "gif", description: "Searches for a GIF based on your query." },
   { name: "play", description: "Plays a song or playlist in a voice channel." },
@@ -257,13 +257,18 @@ const distube = new DisTube(client, {
       distube.setVolume(message, volume);
       message.reply(`Volume set to ${volume}%`);
     } else if (message.content === "!info") {
-      // Map through the commandsInfo array and format each command with its description
-      const infoMessage = commandsInfo
-        .map((cmd) => `**!${cmd.name}**: ${cmd.description}`)
-        .join("\n");
+      // Create a list of commands and their descriptions
+      const commandDescriptions = commandsInfo.map(
+        (cmd) => `\`!${cmd.name}\` : ${cmd.description}`
+      );
 
-      // Send the list of commands to the user
-      message.reply(`Here are all the available commands:\n\n${infoMessage}`);
+      // Combine the descriptions into a single message
+      const infoMessage = `Here are all the available commands:\n\n${commandDescriptions.join(
+        "\n"
+      )}`;
+
+      // Send the formatted list of commands to the user
+      message.reply(infoMessage);
     }
   }
 })();
