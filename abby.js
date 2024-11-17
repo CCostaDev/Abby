@@ -23,6 +23,24 @@ client.commands = new Collection();
 const foldersPath = path.join(__dirname, "commands");
 const commandFolders = fs.readdirSync(foldersPath);
 
+const commandsInfo = [
+  {
+    name: "help",
+    description: "Asks for Abby help, if she is willing to give.",
+  },
+  { name: "gif", description: "Searches for a GIF based on your query." },
+  { name: "play", description: "Plays a song or playlist in a voice channel." },
+  { name: "stop", description: "Stops the music and disconnects the bot." },
+  { name: "skip", description: "Skips the currently playing song." },
+  { name: "shuffle", description: "Shuffles the music queue." },
+  { name: "pause", description: "Pauses the current song." },
+  { name: "resume", description: "Resumes the paused song." },
+  {
+    name: "volume",
+    description: "Adjusts the music volume between 1 and 100.",
+  },
+];
+
 for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);
   const commandFiles = fs
@@ -238,6 +256,14 @@ const distube = new DisTube(client, {
       // Set the volume
       distube.setVolume(message, volume);
       message.reply(`Volume set to ${volume}%`);
+    } else if (message.content === "!info") {
+      // Map through the commandsInfo array and format each command with its description
+      const infoMessage = commandsInfo
+        .map((cmd) => `**!${cmd.name}**: ${cmd.description}`)
+        .join("\n");
+
+      // Send the list of commands to the user
+      message.reply(`Here are all the available commands:\n\n${infoMessage}`);
     }
   }
 })();
