@@ -41,6 +41,12 @@ const commandsInfo = [
   },
 ];
 
+let persistentMessageActive = false; // Tracks whether the persistent message feature is active
+let lastMessageId; // Tracks the ID of Abby's last message
+let messagesAfterAbby = 0; // Counter for messages after Abby's last message
+let targetChannelId; // Tracks the target channel ID for the persistent message
+let persistentMessageContent; // Stores the content of the persistent message
+
 for (const folder of commandFolders) {
   const commandsPath = path.join(foldersPath, folder);
   const commandFiles = fs
@@ -269,6 +275,125 @@ const distube = new DisTube(client, {
 
       // Send the formatted list of commands to the user
       message.reply(infoMessage);
+    } else if (message.content.startsWith("!message")) {
+      const args = message.content.split(" ");
+      let targetChannel = message.channel;
+
+      // Check if the second argument is a channel mention
+      if (args[1] && args[1].startsWith("<#") && args[1].endsWith(">")) {
+        const channelId = args[1].slice(2, -1);
+        targetChannel = client.channels.cache.get(channelId);
+      }
+
+      // Get the message content
+      const messageText =
+        args[1] && args[1].startsWith("<#") && args[1].endsWith(">")
+          ? args.slice(2).join(" ").trim() // Exclude the channel mention
+          : args.slice(1).join(" ").trim(); // No channel mentioned, use all text
+
+      if (!messageText) {
+        message.reply("Please provide a message to send.");
+        return;
+      }
+
+      if (!targetChannel) {
+        message.reply("I couldn't find the specified channel.");
+        return;
+      }
+
+      try {
+        // Reset Variables
+        persistentMessageActive = true;
+        messagesAfterAbby = 0;
+        targetChannelId = targetChannel.id;
+        persistentMessageContent = messageText;
+
+        // Delete the old persistent message, if any
+        if (lastMessageId) {
+          const lastMessage = await targetChannel.messages.fetch(lastMessageId);
+          if (lastMessage) await lastMessage.delete();
+        }
+
+        // Send the new persistent message
+        const persistentMessage = await targetChannel.send(messageText);
+        lastMessageId = persistentMessage.id;
+
+        message.reply(`Persistent message set for ${targetChannel}.`);
+      } catch (error) {
+        console.error("Error setting persistent message:", error);
+        message.reply("Failed to set a persistent message.");
+      }
+    } else if (message.content.startsWith("!stopmessage")) {
+      const args = message.content.split(" ");
+      let targetChannel = message.channel;
+
+      // Check if the second argument is a channel mention
+      if (args[1] && args[1].startsWith("<#") && args[1].endsWith(">")) {
+        const channelId = args[1].slice(2, -1);
+        targetChannel = client.channels.cache.get(channelId);
+      }
+
+      if (!targetChannel || targetChannel.id !== targetChannelId) {
+        message.reply(
+          "I couldn't find an active persistent message in that channel."
+        );
+        return;
+      }
+
+      if (persistentMessageActive) {
+        persistentMessageActive = false;
+        targetChannelId = null;
+        persistentMessageContent = null;
+        messagesAfterAbby = 0;
+
+        // Delete the last persistent message
+        if (lastMessageId) {
+          try {
+            const lastMessage = await targetChannel.messages.fetch(
+              lastMessageId
+            );
+            if (lastMessage) await lastMessage.delete();
+          } catch (error) {
+            console.error(
+              "Error deleting persistent message during stop:",
+              error
+            );
+          }
+        }
+
+        lastMessageId = null;
+        message.reply(
+          `Persistent message in ${targetChannel} has been stopped.`
+        );
+      } else {
+        message.reply("No active persistent message to stop.");
+      }
+    } else if (
+      persistentMessageActive &&
+      message.channel.id === targetChannelId
+    ) {
+      messagesAfterAbby++;
+
+      if (messagesAfterAbby > 5) {
+        try {
+          const channel = client.channels.cache.get(targetChannelId);
+
+          // Delete the old persistent message
+          if (lastMessageId) {
+            const lastMessage = await channel.messages.fetch(lastMessageId);
+            if (lastMessage) await lastMessage.delete();
+          }
+
+          // Resend the persistent message
+          const newMessage = await channel.send(persistentMessageContent);
+          lastMessageId = newMessage.id;
+
+          // Reset the counter
+          messagesAfterAbby = 0;
+        } catch (error) {
+          console.error("Error managing persistent message:", error);
+        }
+      }
     }
   }
 })();
