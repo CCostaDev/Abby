@@ -69,6 +69,7 @@ for (const folder of commandFolders) {
 const distube = new DisTube(client, {
   plugins: [new YtDlpPlugin()],
   emitNewSongOnly: true,
+  streamType: "opus", // Ensures streaming with Opus codec
 });
 
 (async () => {
